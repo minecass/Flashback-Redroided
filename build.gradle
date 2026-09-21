@@ -57,8 +57,6 @@ dependencies {
 
     // Login in dev environment
     runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.1.2")
-    runtimeOnly("org.apache.httpcomponents:httpclient:4.5.14")
-    runtimeOnly("org.apache.httpcomponents:httpcore:4.4.16")
 
     // MixinConstraints
     include(implementation("com.moulberry:mixinconstraints:1.0.8"))
@@ -71,60 +69,24 @@ dependencies {
 
     // Apache stuff
     include(implementation("org.apache.commons:commons-math3:3.6.1"))
+    include(implementation("org.apache.httpcomponents:httpclient:4.5.14"))
+    include(implementation("org.apache.httpcomponents:httpcore:4.4.16"))
 
     // Mod compatibility
     compileOnly("maven.modrinth:distanthorizons:Mt9bDAs6")
     compileOnly("maven.modrinth:sodium:Amr4VcZo")
     compileOnly("maven.modrinth:iris:MwcLS51S")
     compileOnly("maven.modrinth:bobby:8gsFUovP")
-    compileOnly("maven.modrinth:simple-voice-chat:OLnMVWXy")
+    compileOnly("maven.modrinth:simple-voice-chat:JDkcoyAy")
     compileOnly("maven.modrinth:modmenu:jvjwXH6l")
     compileOnly("maven.modrinth:scalablelux:gYbHVCz8")
 
-    // FFmpeg
-    shadow(implementation("org.bytedeco:javacv-platform:1.5.14") {
-        exclude group: "org.bytedeco", module: "artoolkitplus"
-        exclude group: "org.bytedeco", module: "artoolkitplus-platform"
-        exclude group: "org.bytedeco", module: "flycapture"
-        exclude group: "org.bytedeco", module: "flycapture-platform"
-        exclude group: "org.bytedeco", module: "leptonica"
-        exclude group: "org.bytedeco", module: "leptonica-platform"
-        exclude group: "org.bytedeco", module: "libdc1394"
-        exclude group: "org.bytedeco", module: "libdc1394-platform"
-        exclude group: "org.bytedeco", module: "libfreenect"
-        exclude group: "org.bytedeco", module: "libfreenect-platform"
-        exclude group: "org.bytedeco", module: "libfreenect2"
-        exclude group: "org.bytedeco", module: "libfreenect2-platform"
-        exclude group: "org.bytedeco", module: "librealsense2"
-        exclude group: "org.bytedeco", module: "librealsense2-platform"
-        exclude group: "org.bytedeco", module: "librealsense"
-        exclude group: "org.bytedeco", module: "librealsense-platform"
-        exclude group: "org.bytedeco", module: "openblas"
-        exclude group: "org.bytedeco", module: "openblas-platform"
-        exclude group: "org.bytedeco", module: "opencv"
-        exclude group: "org.bytedeco", module: "opencv-platform"
-        exclude group: "org.bytedeco", module: "tesseract"
-        exclude group: "org.bytedeco", module: "tesseract-platform"
-        exclude group: "org.bytedeco", module: "videoinput"
-        exclude group: "org.bytedeco", module: "videoinput-platform"
-        exclude group: "org.bytedeco", module: "ffmpeg"
-        exclude group: "org.bytedeco", module: "javacpp"
-    })
-    // Include bytedeco ffmpeg & natives
-    shadow(implementation(group: "org.bytedeco", name: "ffmpeg", version: "8.1.2-1.5.14", classifier: ""))
-    shadow(api(rootProject.files('ffmpeg/ffmpeg-natives-linux.jar'))) // Custom natives are from https://github.com/BtbN/FFmpeg-Builds/
-    shadow(api(rootProject.files('ffmpeg/ffmpeg-natives-windows.jar')))
-    shadow(implementation(group: "org.bytedeco", name: "ffmpeg", version: "8.1.2-1.5.14", classifier: "macosx-x86_64"))
-    shadow(implementation(group: "org.bytedeco", name: "ffmpeg", version: "8.1.2-1.5.14", classifier: "macosx-arm64"))
-    // Include only platforms we use
-    shadow(implementation(group: "org.bytedeco", name: "javacpp", version: "1.5.14", classifier: "linux-x86_64"))
-    shadow(implementation(group: "org.bytedeco", name: "javacpp", version: "1.5.14", classifier: "windows-x86_64"))
-    shadow(implementation(group: "org.bytedeco", name: "javacpp", version: "1.5.14", classifier: "macosx-x86_64"))
-    shadow(implementation(group: "org.bytedeco", name: "javacpp", version: "1.5.14", classifier: "macosx-arm64"))
+    // FFmpeg is provided at runtime by the PojavLauncher FFmpeg plugin.
+
 
     // ImGui
-    shadow(implementation(rootProject.files('deps/imgui-binding-1.90.0.jar')))
-    shadow(api(rootProject.files('deps/imgui-natives.jar')))
+    shadow(implementation(rootProject.files('deps/imgui-binding-1.92.jar')))
+    shadow(api(rootProject.files('deps/imgui-java-natives-android.jar')))
 }
 
 processResources {
@@ -140,9 +102,6 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 java {
-    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-    // if it is present.
-    // If you remove this line, sources will not be generated.
     withSourcesJar()
 
     toolchain.languageVersion.set(JavaLanguageVersion.of(25))
@@ -152,10 +111,11 @@ java {
 
 jar {
     from("LICENSE") {
-        rename { "${it}_${project.base.archivesName.get()}"}
+        rename { name ->
+            name + "_" + project.base.archivesName.get()
+        }
     }
 }
-
 
 shadowJar {
     configurations = [project.configurations.shadow]
@@ -167,8 +127,6 @@ shadowJar {
 }
 
 // Super hacky... merge the shadowJar with the main jar.
-// This is needed because the main jar has the includes
-// Couldn't find a better way of doing this
 tasks.register("mergeShadowWithIncludes", Jar) {
     archiveBaseName.set("merged")
     from(zipTree(project.tasks.jar.archiveFile))

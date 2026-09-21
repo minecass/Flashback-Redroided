@@ -233,11 +233,9 @@ public class Flashback implements ModInitializer, ClientModInitializer {
         }
 
         config = FlashbackConfigV1.tryLoadFromFolder(configFolder);
-        configElements = LatticeElements.fromAnnotations(FlashbackTextComponents.FLASHBACK_OPTIONS, config);
 
-        if (config.exporting.useSystemFFmpeg) {
-            System.setProperty("org.bytedeco.javacpp.pathsfirst", "true");
-        }
+
+configElements = LatticeElements.fromAnnotations(FlashbackTextComponents.FLASHBACK_OPTIONS, config);
         if (config.internal.nfdUsePortal) {
             System.setProperty("org.lwjgl.nfd.linux.portal", "true");
         }

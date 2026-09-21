@@ -1,11 +1,12 @@
 {
 	"schemaVersion": 1,
-	"id": "flashback",
+	"id": "flashback-redroided",
 	"version": "${version}",
-	"name": "Flashback",
-	"description": "Record your gameplay, view the recordings and export cinematic shots",
+	"name": "Flashback [Redroided]",
+	"description": "Android port of Flashback with custom native ImGui and Ffmpeg packaging for launcher compatibility",
 	"authors": [
-		"Moulberry"
+		"Moulberry",
+		"WhalterMc"
 	],
 	"contact": {
 		"homepage": "https://flashback.moulberry.com/",
@@ -37,7 +38,7 @@
 	],
     "breaks": {
         "iris": "<1.10.9",
-        "voicechat_api": "<2.6.24"
+        "voicechat": "<2.6.23"
     },
 	"depends": {
 		"fabricloader": ">=0.15.10",

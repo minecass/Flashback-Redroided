@@ -1,200 +1,73 @@
 package com.moulberry.flashback.combo_options;
 
-import com.moulberry.flashback.exporting.PixelFormatHelper;
-import org.bytedeco.ffmpeg.avcodec.AVCodec;
-import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
-import org.bytedeco.ffmpeg.avcodec.AVCodecHWConfig;
-import org.bytedeco.ffmpeg.avutil.AVDictionary;
-import org.bytedeco.ffmpeg.avutil.AVRational;
-import org.bytedeco.ffmpeg.global.avcodec;
-import org.bytedeco.ffmpeg.global.avutil;
-import org.bytedeco.javacpp.Pointer;
+import com.moulberry.flashback.exporting.PojavFFmpeg;
 
-import java.util.*;
-
-import static org.bytedeco.ffmpeg.global.avcodec.*;
-import static org.bytedeco.ffmpeg.global.avutil.*;
-import static org.bytedeco.ffmpeg.global.avutil.av_find_nearest_q_idx;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 public enum VideoCodec implements ComboOption {
-
-    H264("H264 (AVC)", avcodec.AV_CODEC_ID_H264, null),
-    H265("H265 (HEVC)", avcodec.AV_CODEC_ID_H265, null),
-    AV1("AV1", avcodec.AV_CODEC_ID_AV1, Set.of(VideoContainer.MP4)),
-    VP9("VP9", avcodec.AV_CODEC_ID_VP9, null),
-    PRO_RES("Apple ProRes", avcodec.AV_CODEC_ID_PRORES, null),
-    QUICK_TIME("QuickTime", avcodec.AV_CODEC_ID_QTRLE, null),
-    WEBP("WebP", AV_CODEC_ID_WEBP, Set.of(VideoContainer.WEBP)),
-    GIF("GIF", AV_CODEC_ID_GIF, Set.of(VideoContainer.GIF)),
-    PNG("PNG", AV_CODEC_ID_PNG, Set.of(VideoContainer.PNG_SEQUENCE)),
-    EXR("EXR", AV_CODEC_ID_EXR, Set.of(VideoContainer.EXR_SEQUENCE));
+    H264("H264 (AVC)", Set.of(), false,
+        "libx264", "h264_mediacodec", "h264_v4l2m2m", "h264_nvenc", "h264_amf"),
+    H265("H265 (HEVC)", Set.of(), false,
+        "libx265", "hevc_mediacodec", "hevc_v4l2m2m", "hevc_nvenc", "hevc_amf"),
+    AV1("AV1", Set.of(VideoContainer.MP4), false,
+        "libaom-av1", "libsvtav1", "av1_mediacodec", "av1_nvenc"),
+    VP9("VP9", Set.of(), false,
+        "libvpx-vp9", "vp9_mediacodec"),
+    PRO_RES("Apple ProRes", Set.of(), false, "prores_ks", "prores"),
+    QUICK_TIME("QuickTime", Set.of(), false, "qtrle"),
+    WEBP("WebP", Set.of(VideoContainer.WEBP), false, "libwebp"),
+    GIF("GIF", Set.of(VideoContainer.GIF), false, "gif"),
+    PNG("PNG", Set.of(VideoContainer.PNG_SEQUENCE), true, "png"),
+    EXR("EXR", Set.of(VideoContainer.EXR_SEQUENCE), true, "exr");
 
     private final String text;
-    private final int codecId;
-    private String[] encoders;
-    private boolean supportsTransparency = false;
     private final Set<VideoContainer> validContainers;
+    private final boolean transparency;
+    private final String[] candidates;
 
-    VideoCodec(String text, int codecId, Set<VideoContainer> validContainers) {
+    VideoCodec(String text, Set<VideoContainer> validContainers, boolean transparency, String... candidates) {
         this.text = text;
-        this.codecId = codecId;
         this.validContainers = validContainers;
+        this.transparency = transparency;
+        this.candidates = candidates;
     }
 
     @Override
     public String text() {
-        return this.text;
+        return text;
     }
 
     public int codecId() {
-        return this.codecId;
+        // Kept only for source compatibility with code outside the exporter.
+        return ordinal();
     }
 
     public Set<VideoContainer> validContainers() {
-        return this.validContainers;
+        return validContainers;
     }
 
     public boolean supportsTransparency() {
-        if (this == VP9 || this == H264 || this == H265) {
-            // VP9 supports transparency (yuva420p), but apparently most decoders for it do not. Let's not mark it as supporting transparency
-            // See also: https://trac.ffmpeg.org/ticket/8468
-
-            // H264/H265 sometimes claim to support transparency but don't, also ignore them as well
-            return false;
-        }
-        if (this.encoders == null) {
-            this.getEncoders();
-        }
-        return this.supportsTransparency;
+        return transparency || this == VP9 || this == PRO_RES;
     }
 
     public String[] getEncoders() {
-        if (this.encoders == null) {
-            List<String> encodersHardware = new ArrayList<>();
-            List<String> encodersHybrid = new ArrayList<>();
-            List<String> encodersSoftware = new ArrayList<>();
-            List<String> encodersAvoid = new ArrayList<>();
-
-            try (Pointer pointer = new Pointer()) {
-                while (true) {
-                    try (AVCodec codec = avcodec.av_codec_iterate(pointer)) {
-                        try {
-                            if (codec == null) {
-                                break;
-                            }
-                            if (codec.id() != this.codecId) {
-                                continue;
-                            }
-                            if (avcodec.av_codec_is_encoder(codec) == 0) {
-                                continue;
-                            }
-                            if (!doesEncoderWork(codec)) {
-                                continue;
-                            }
-
-                            int capabilities = codec.capabilities();
-                            String name = codec.name().getString();
-
-                            this.supportsTransparency = false;
-                            for (int i = 0;; i++) {
-                                int pixFmt = codec.pix_fmts().get(i);
-                                if (pixFmt == -1) {
-                                    break;
-                                } else {
-                                    if (PixelFormatHelper.doesPixelFormatSupportTransparency(pixFmt)) {
-                                        // System.out.println(name + " supports transparency because of " + PixelFormatHelper.pixelFormatToString(pixFmt));
-                                        this.supportsTransparency = true;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if ((capabilities & avcodec.AV_CODEC_CAP_HARDWARE) != 0) {
-                                encodersHardware.add(name);
-                            } else if ((capabilities & avcodec.AV_CODEC_CAP_HYBRID) != 0 || codecHasHwConfig(codec)) {
-                                encodersHybrid.add(name);
-                            } else if ((capabilities & avcodec.AV_CODEC_CAP_EXPERIMENTAL) != 0 || name.equals("libaom-av1")) {
-                                encodersAvoid.add(name);
-                            } else {
-                                encodersSoftware.add(name);
-                            }
-                        } finally {
-                            if (codec != null) {
-                                codec.close();
-                            }
-                        }
-                    }
-                }
+        List<String> result = new ArrayList<>();
+        for (String candidate : candidates) {
+            if (PojavFFmpeg.hasEncoder(candidate)) {
+                result.add(candidate);
             }
-
-            List<String> encoders = new ArrayList<>();
-            encoders.addAll(encodersHardware);
-            encoders.addAll(encodersHybrid);
-            encoders.addAll(encodersSoftware);
-            encoders.addAll(encodersAvoid);
-
-            this.encoders = encoders.toArray(new String[0]);
         }
-
-        return this.encoders;
+        return result.toArray(new String[0]);
     }
 
-    private static boolean doesEncoderWork(AVCodec codec) {
-        AVCodecContext codecContext = null;
-        AVDictionary options = new AVDictionary(null);
-
-        try {
-            if ((codecContext = avcodec.avcodec_alloc_context3(codec)) == null) {
-                return false;
+    public static VideoCodec fromEncoder(String encoder) {
+        for (VideoCodec codec : values()) {
+            for (String candidate : codec.candidates) {
+                if (candidate.equals(encoder)) return codec;
             }
-
-            // Setup dummy parameters
-            codecContext.codec_id(codec.id());
-            codecContext.codec_type(AVMEDIA_TYPE_VIDEO);
-            codecContext.bit_rate(400000);
-            codecContext.width(1920);
-            codecContext.height(1080);
-
-            AVRational frameRate = av_d2q(60.0, 1001000);
-            AVRational supportedFramerates = codec.supported_framerates();
-            if (supportedFramerates != null) {
-                int idx = av_find_nearest_q_idx(frameRate, supportedFramerates);
-                frameRate = supportedFramerates.position(idx);
-            }
-
-            AVRational time_base = av_inv_q(frameRate);
-            codecContext.time_base(time_base);
-
-            int pixelFormat = PixelFormatHelper.getBestPixelFormat(codec.name().getString(), AV_PIX_FMT_RGBA, false);
-            codecContext.pix_fmt(pixelFormat);
-
-            if (pixelFormat == AV_PIX_FMT_VULKAN || pixelFormat == AV_PIX_FMT_OPENCL) {
-                return false;
-            }
-
-            if ((codec.capabilities() & AV_CODEC_CAP_EXPERIMENTAL) != 0) {
-                codecContext.strict_std_compliance(FF_COMPLIANCE_EXPERIMENTAL);
-            }
-
-            return avcodec.avcodec_open2(codecContext, codec, options) >= 0;
-        } finally {
-            if (codecContext != null) {
-                avcodec.avcodec_free_context(codecContext);
-                codecContext.close();
-            }
-            avutil.av_dict_free(options);
         }
-
+        return H264;
     }
-
-    private static boolean codecHasHwConfig(AVCodec codec) {
-        try (AVCodecHWConfig config = avcodec.avcodec_get_hw_config(codec, 0)) {
-            if (config != null) {
-                config.close();
-                return true;
-            }
-        } catch (Exception ignored) {}
-        return false;
-    }
-
 }

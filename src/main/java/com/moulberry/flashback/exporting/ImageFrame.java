@@ -1,7 +1,6 @@
 package com.moulberry.flashback.exporting;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import org.bytedeco.ffmpeg.global.avutil;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
 
@@ -104,13 +103,6 @@ public class ImageFrame implements AutoCloseable {
             return this.bytesPerChannel() * this.channels();
         }
 
-        private int ffmpegPixelFormat() {
-            return switch (this) {
-                case RGBA_U8 -> avutil.AV_PIX_FMT_RGBA;
-                case GRAY_F32 -> avutil.AV_PIX_FMT_GRAYF32;
-                case CUSTOM -> throw new UnsupportedOperationException();
-            };
-        }
     }
 
     public final int width;
@@ -121,12 +113,9 @@ public class ImageFrame implements AutoCloseable {
     public @Nullable FloatBuffer audioBuffer;
     private final int customFFmpegPixelFormat;
 
+    /** Legacy name retained for source compatibility. Returns 0 for normal Java formats. */
     public int ffmpegPixelFormat() {
-        if (this.format == Format.CUSTOM) {
-            return this.customFFmpegPixelFormat;
-        } else {
-            return this.format.ffmpegPixelFormat();
-        }
+        return this.format == Format.CUSTOM ? this.customFFmpegPixelFormat : 0;
     }
 
     public ImageFrame(int width, int height, Format format, boolean zero) {

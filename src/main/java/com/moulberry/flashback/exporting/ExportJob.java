@@ -32,8 +32,8 @@ import com.moulberry.flashback.utils.InputHelper;
 import com.moulberry.flashback.utils.WindowSizeTracker;
 import com.moulberry.flashback.visuals.AccurateEntityPositionHandler;
 import com.moulberry.flashback.visuals.FlashbackDrawBuffer;
-import imgui.moulberry90.flag.ImGuiKey;
-import imgui.moulberry90.flag.ImGuiMouseButton;
+import imgui.moulberry92.flag.ImGuiKey;
+import imgui.moulberry92.flag.ImGuiMouseButton;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.font.TextRenderable;
 import net.minecraft.client.renderer.Projection;
@@ -198,10 +198,20 @@ public class ExportJob {
 
         TempFileInfo tempFileInfo = null;
         if (!this.settings.container().isImageSequence() || this.settings.pngSequenceFormat() == null) {
-            String tempFileName = "replay_export_temp/" + uuid + "." + this.settings.container().extension();
-            Path exportTempFile = Path.of(tempFileName);
-            Path exportTempFolder = exportTempFile.getParent();
-            tempFileInfo = new TempFileInfo(tempFileName, exportTempFile, exportTempFolder);
+            // Android/MJLauncher does not reliably use the game instance directory
+            // as the Java process working directory. Keep the temporary FFmpeg
+            // output absolute so FFmpeg never receives a relative path.
+            //
+            // The temp folder lives beside the final export directory and is
+            // removed after the file is moved, while the user's exports folder
+            // itself is preserved.
+            Path outputDirectory = this.settings.output().toAbsolutePath().getParent();
+            if (outputDirectory == null) {
+                throw new IllegalStateException("Export output has no parent directory: " + this.settings.output());
+            }
+            Path exportTempFolder = outputDirectory.resolve(".flashback-export-temp");
+            Path exportTempFile = exportTempFolder.resolve(uuid + "." + this.settings.container().extension());
+            tempFileInfo = new TempFileInfo(exportTempFile.toString(), exportTempFile, exportTempFolder);
         }
         boolean keepTempFile = false;
 

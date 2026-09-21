@@ -55,6 +55,7 @@ public class FlashbackConfigV0 {
 
     public VideoContainer container = null;
     public VideoCodec videoCodec = null;
+    public int[] selectedVideoEncoder = new int[]{0};
     public boolean useMaximumBitrate = false;
 
     public boolean recordAudio = false;
@@ -125,6 +126,7 @@ public class FlashbackConfigV0 {
         config.internalExport.noGui = this.noGui;
         config.internalExport.container = this.container;
         config.internalExport.videoCodec = this.videoCodec;
+        config.internalExport.selectedVideoEncoder = this.selectedVideoEncoder;
         config.internalExport.useMaximumBitrate = this.useMaximumBitrate;
         config.internalExport.recordAudio = this.recordAudio;
         config.internalExport.transparentBackground = this.transparentBackground;

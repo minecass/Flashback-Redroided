@@ -1,15 +1,12 @@
 package com.moulberry.flashback.combo_options;
 
-import org.bytedeco.ffmpeg.avformat.AVOutputFormat;
-import org.bytedeco.ffmpeg.global.avcodec;
-import org.bytedeco.ffmpeg.global.avformat;
+import com.moulberry.flashback.exporting.PojavFFmpeg;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 public enum VideoContainer implements ComboOption {
-
     MP4("MP4", "mp4"),
     MKV("MKV", "mkv"),
     AVI("AVI", "avi"),
@@ -22,10 +19,10 @@ public enum VideoContainer implements ComboOption {
 
     private final String text;
     private final String extension;
-    private VideoCodec[] supportedVideoCodecs = null;
-    private VideoCodec[] supportedVideoCodecsWithTransparency = null;
-    private AudioCodec[] supportedAudioCodecs = null;
-    private boolean isImageSequence = false;
+    private VideoCodec[] supportedVideoCodecs;
+    private VideoCodec[] supportedVideoCodecsWithTransparency;
+    private AudioCodec[] supportedAudioCodecs;
+    private boolean isImageSequence;
 
     VideoContainer(String text, String extension) {
         this.text = text;
@@ -34,7 +31,7 @@ public enum VideoContainer implements ComboOption {
 
     @Override
     public String text() {
-        return this.text;
+        return text;
     }
 
     public String extension() {
@@ -43,79 +40,49 @@ public enum VideoContainer implements ComboOption {
 
     public static VideoContainer[] findSupportedContainers(boolean transparency) {
         List<VideoContainer> containers = new ArrayList<>();
-        for (VideoContainer videoContainer : VideoContainer.values()) {
-            if (videoContainer.getSupportedVideoCodecs(transparency).length != 0) {
-                containers.add(videoContainer);
+        for (VideoContainer container : values()) {
+            if (container.getSupportedVideoCodecs(transparency).length != 0) {
+                containers.add(container);
             }
         }
         return containers.toArray(new VideoContainer[0]);
     }
 
     public boolean isImageSequence() {
-        this.getSupportedVideoCodecs(false);
-        return this.isImageSequence;
+        if (this == PNG_SEQUENCE || this == EXR_SEQUENCE) {
+            isImageSequence = true;
+        }
+        return isImageSequence;
     }
 
     public VideoCodec[] getSupportedVideoCodecs(boolean transparency) {
-        VideoCodec[] codecs = transparency ? this.supportedVideoCodecsWithTransparency : this.supportedVideoCodecs;
+        VideoCodec[] codecs = transparency ? supportedVideoCodecsWithTransparency : supportedVideoCodecs;
+        if (codecs != null) return codecs;
 
-        if (codecs == null) {
-            List<VideoCodec> supportedCodecs = new ArrayList<>();
-
-            try (AVOutputFormat outputFormat = avformat.av_guess_format(this.extension, "test."+this.extension, null)) {
-                for (VideoCodec codec : VideoCodec.values()) {
-                    Set<VideoContainer> validContainers = codec.validContainers();
-                    if (validContainers != null && !validContainers.contains(this)) {
-                        continue;
-                    }
-                    if (codec.getEncoders().length == 0) {
-                        continue;
-                    }
-                    if (transparency && !codec.supportsTransparency()) {
-                        continue;
-                    }
-
-                    if (outputFormat.name().getString().equals("image2")) {
-                        this.isImageSequence = true;
-                    }
-
-                    int ret = avformat.avformat_query_codec(outputFormat, codec.codecId(), avcodec.FF_COMPLIANCE_NORMAL);
-                    if (ret == 1) {
-                        supportedCodecs.add(codec);
-                    }
-                }
-            }
-
-            codecs = supportedCodecs.toArray(new VideoCodec[0]);
-            if (transparency) {
-                this.supportedVideoCodecsWithTransparency = codecs;
-            } else {
-                this.supportedVideoCodecs = codecs;
-            }
+        List<VideoCodec> supported = new ArrayList<>();
+        for (VideoCodec codec : VideoCodec.values()) {
+            if (codec.validContainers().size() > 0 && !codec.validContainers().contains(this)) continue;
+            if (codec.getEncoders().length == 0) continue;
+            if (transparency && !codec.supportsTransparency()) continue;
+            if (this == PNG_SEQUENCE || this == EXR_SEQUENCE) isImageSequence = true;
+            supported.add(codec);
         }
+
+        codecs = supported.toArray(new VideoCodec[0]);
+        if (transparency) supportedVideoCodecsWithTransparency = codecs;
+        else supportedVideoCodecs = codecs;
         return codecs;
     }
 
     public AudioCodec[] getSupportedAudioCodecs() {
-        if (this.supportedAudioCodecs == null) {
-            List<AudioCodec> supportedCodecs = new ArrayList<>();
-            if (!this.isImageSequence()) {
-                try (AVOutputFormat outputFormat = avformat.av_guess_format(this.extension, "test."+this.extension, null)) {
-                    for (AudioCodec codec : AudioCodec.values()) {
-                        if (codec.getEncoders().length == 0) {
-                            continue;
-                        }
+        if (supportedAudioCodecs != null) return supportedAudioCodecs;
+        if (isImageSequence()) return supportedAudioCodecs = new AudioCodec[0];
 
-                        int ret = avformat.avformat_query_codec(outputFormat, codec.codecId(), avcodec.FF_COMPLIANCE_NORMAL);
-                        if (ret == 1) {
-                            supportedCodecs.add(codec);
-                        }
-                    }
-                }
-            }
-            this.supportedAudioCodecs = supportedCodecs.toArray(new AudioCodec[0]);
+        List<AudioCodec> supported = new ArrayList<>();
+        for (AudioCodec codec : AudioCodec.values()) {
+            if (codec.getEncoders().length != 0) supported.add(codec);
         }
-        return this.supportedAudioCodecs;
+        return supportedAudioCodecs = supported.toArray(new AudioCodec[0]);
     }
 
     public String mimeType() {

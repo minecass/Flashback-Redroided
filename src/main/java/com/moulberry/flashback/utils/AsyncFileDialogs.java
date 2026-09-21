@@ -50,32 +50,15 @@ public class AsyncFileDialogs {
         currentSaveOrOpenFileDialog = new CompletableFuture<>();
         CompletableFuture<String> future = currentSaveOrOpenFileDialog;
 
-        String defaultLocation = filter(defaultPath + "/" + defaultName);
+        String location = filter(defaultPath + "/" + defaultName);
 
-        var fileFilter = createFilterBuffer(filterDescription, filters);
-        String autoExtension = filters.length == 1 ? filters[0] : null;
+        Flashback.LOGGER.info("Flashback export save location: {}", location);
 
-        long window = Minecraft.getInstance().getWindow().handle();
-        SDLDialog.SDL_ShowSaveFileDialog((userdata, filelist, selectedFilter) -> {
-            fileFilter.free();
-
-            if (future == currentSaveOrOpenFileDialog) {
-                currentSaveOrOpenFileDialog = null;
-            }
-
-            if (filelist == MemoryUtil.NULL) {
-                Flashback.LOGGER.error("Error occurred during save file dialog: {}", SDLError.SDL_GetError());
-                future.complete(null);
-                return;
-            }
-
-            long filePtr = MemoryUtil.memGetAddress(filelist);
-            String result = MemoryUtil.memUTF8Safe(filePtr);
-            if (result != null && autoExtension != null && result.indexOf('.') < 0) {
-                result = result + "." + autoExtension;
-            }
-            future.complete(result);
-        }, 0, window, fileFilter.buffer(), defaultLocation);
+        // Android/MJLauncher can fail when SDL tries to create its native save-file
+        // picker. Flashback already has a complete destination, so do not open a
+        // native chooser at all. Return the fixed destination directly.
+        currentSaveOrOpenFileDialog = null;
+        future.complete(location);
 
         return future;
     }

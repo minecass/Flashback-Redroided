@@ -3,15 +3,11 @@ package com.moulberry.flashback.exporting;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.moulberry.flashback.Flashback;
 import com.moulberry.flashback.SneakyThrow;
-import org.bytedeco.javacv.FFmpegFrameRecorder;
-import org.bytedeco.javacv.Frame;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ArrayBlockingQueue;

@@ -1,21 +1,20 @@
 package com.moulberry.flashback.editor.ui;
 
-import com.moulberry.flashback.Flashback;
 import com.moulberry.flashback.editor.keybinds.Keybind;
 import com.moulberry.flashback.editor.keybinds.Keybinds;
 import com.moulberry.flashback.utils.AsyncFileDialogs;
 import com.moulberry.flashback.utils.InputHelper;
 import com.moulberry.flashback.utils.WindowSizeTracker;
-import imgui.moulberry90.ImGui;
-import imgui.moulberry90.ImGuiIO;
-import imgui.moulberry90.callback.ImStrConsumer;
-import imgui.moulberry90.callback.ImStrSupplier;
-import imgui.moulberry90.flag.ImGuiBackendFlags;
-import imgui.moulberry90.flag.ImGuiConfigFlags;
-import imgui.moulberry90.flag.ImGuiKey;
-import imgui.moulberry90.flag.ImGuiMouseButton;
-import imgui.moulberry90.flag.ImGuiMouseCursor;
-import imgui.moulberry90.flag.ImGuiMouseSource;
+import imgui.moulberry92.ImGui;
+import imgui.moulberry92.ImGuiIO;
+import imgui.moulberry92.callback.ImStrConsumer;
+import imgui.moulberry92.callback.ImStrSupplier;
+import imgui.moulberry92.flag.ImGuiBackendFlags;
+import imgui.moulberry92.flag.ImGuiConfigFlags;
+import imgui.moulberry92.flag.ImGuiKey;
+import imgui.moulberry92.flag.ImGuiMouseButton;
+import imgui.moulberry92.flag.ImGuiMouseCursor;
+import imgui.moulberry92.flag.ImGuiMouseSource;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import net.minecraft.client.KeyMapping;
@@ -238,14 +237,6 @@ public class CustomImGuiWindowerSdl implements CustomImGuiWindower {
                 boolean pressed = event.type() == SDLEvents.SDL_EVENT_MOUSE_BUTTON_DOWN;
 
                 if (!ReplayUI.isActive()) {
-                    // Don't allow mouse presses during export
-                    if (Flashback.isExporting()) {
-                        if (!pressed) {
-                            this.mouseButtonsDownGame &= ~(1 << imguiButton);
-                        }
-                        return true;
-                    }
-
                     if (pressed) {
                         this.mouseButtonsDownGame |= 1 << imguiButton;
                     } else {
@@ -324,14 +315,6 @@ public class CustomImGuiWindowerSdl implements CustomImGuiWindower {
                         if (imguiKey != ImGuiKey.None) {
                             io.addKeyEvent(imguiKey, false);
                         }
-                    }
-
-                    // Don't allow key presses during export
-                    if (Flashback.isExporting()) {
-                        if (!pressed) {
-                            this.gamePressedScancodes.remove(rawScancode);
-                        }
-                        return true;
                     }
 
                     if (pressed) {
