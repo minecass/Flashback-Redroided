@@ -1,28 +1,19 @@
 buildscript {
     repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
         mavenCentral()
         gradlePluginPortal()
-        maven { url "https://jitpack.io" }
-        maven { url "https://plugins.gradle.org/m2/" }
+        maven { url = 'https://jitpack.io' }
     }
     dependencies {
+        classpath 'net.fabricmc:fabric-loom:1.7-SNAPSHOT'
         classpath 'com.gradleup.shadow:shadow-gradle-plugin:8.3.5'
     }
 }
 
-pluginManagement {
-    repositories {
-        maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
-
-plugins {
-    id 'net.fabricmc.fabric-loom' version '1.7-SNAPSHOT'
-    id 'com.gradleup.shadow' version '8.3.5'
-    id 'maven-publish'
-}
+apply plugin: 'net.fabricmc.fabric-loom'
+apply plugin: 'com.gradleup.shadow'
+apply plugin: 'maven-publish'
 
 version = project.mod_version
 group = project.maven_group
@@ -32,7 +23,7 @@ base {
 }
 
 repositories {
-    maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
+    maven { url = 'https://maven.fabricmc.net/' }
     maven {
         url = 'https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/devauth/maven/v1'
         content {
