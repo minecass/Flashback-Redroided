@@ -2,17 +2,17 @@ buildscript {
     repositories {
         mavenCentral()
         gradlePluginPortal()
-        maven { url 'https://jitpack.io' }
+        maven { url "https://jitpack.io" }
         maven { url "https://plugins.gradle.org/m2/" }
     }
     dependencies {
-        classpath("com.gradleup.shadow:com.gradleup.shadow.gradle.plugin:9.3.0")
+        classpath 'com.gradleup.shadow:shadow-gradle-plugin:8.3.5'
     }
 }
 
 plugins {
-    id 'net.fabricmc.fabric-loom' version '1.15-SNAPSHOT'
-    id 'com.gradleup.shadow' version "9.3.0"
+    id 'net.fabricmc.fabric-loom' version '1.7-SNAPSHOT'
+    id 'com.gradleup.shadow' version '8.3.5'
     id 'maven-publish'
 }
 
@@ -25,24 +25,24 @@ base {
 
 repositories {
     maven {
-        url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1"
+        url = 'https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/devauth/maven/v1'
         content {
-            includeGroup("me.djtheredstoner")
+            includeGroup "no.djtheredstoner"
         }
     }
     maven {
-        url 'https://api.modrinth.com/maven'
+        url = 'https://maven.isxander.dev/releases'
         content {
-            includeGroup("maven.modrinth")
+            includeGroup "dev.isxander"
         }
     }
     maven {
-        url = "https://maven.bawnorton.com/releases"
+        url = 'https://cursemaven.com'
         content {
-            includeGroup("com.github.bawnorton.mixinsquared")
+            includeGroup "curse.maven"
         }
     }
-    mavenLocal()
+    mavenCentral()
 }
 
 loom {
@@ -50,43 +50,35 @@ loom {
 }
 
 dependencies {
-    // Minecraft and fabric
+    // Minecraft and Fabric
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    mappings "net.fabricmc:yarn:${project.minecraft_version}+build.1:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    // Login in dev environment
-    runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.1.2")
+    // Mod menu & DevAuth
+    modRuntimeOnly("no.djtheredstoner:devauth-fabric:1.1.2")
 
-    // MixinConstraints
-    include(implementation("com.moulberry:mixinconstraints:1.0.8"))
-
-    // MixinSquared
-    include(implementation(annotationProcessor("com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.3.7-beta.1")))
-
-    // Lattice (config)
-    include(implementation("com.moulberry:lattice:2.2.0"))
-
+    // Dependencies
+    includeImplementation("com.moulberry:flashback-common:1.0.0")
+    
     // Apache stuff
-    include(implementation("org.apache.commons:commons-math3:3.6.1"))
-    include(implementation("org.apache.httpcomponents:httpclient:4.5.14"))
-    include(implementation("org.apache.httpcomponents:httpcore:4.4.16"))
+    includeImplementation('commons-io:commons-io:2.11.0')
+    includeImplementation('org.apache.httpcomponents:httpclient:4.5.14')
+    includeImplementation('org.apache.httpcomponents:httpmime:4.5.14')
 
     // Mod compatibility
-    compileOnly("maven.modrinth:distanthorizons:Mt9bDAs6")
-    compileOnly("maven.modrinth:sodium:Amr4VcZo")
-    compileOnly("maven.modrinth:iris:MwcLS51S")
-    compileOnly("maven.modrinth:bobby:8gsFUovP")
-    compileOnly("maven.modrinth:simple-voice-chat:JDkcoyAy")
-    compileOnly("maven.modrinth:modmenu:jvjwXH6l")
-    compileOnly("maven.modrinth:scalablelux:gYbHVCz8")
+    compileOnly('maven.modrinth:distant-horizons:2.1.2-a')
+    compileOnly('maven.modrinth:sodium:mc1.21-0.5.11')
+    compileOnly('maven.modrinth:iris:1.7.2+1.21')
+    compileOnly('maven.modrinth:replaymod:1.21-2.6.16')
+    compileOnly('maven.modrinth:simple-voice-chat:fabric-1.21-2.5.18')
+    compileOnly('maven.modrinth:modmenu:11.0.0')
+    compileOnly('maven.modrinth:vulkanmod:0.4.5')
 
-    // FFmpeg is provided at runtime by the PojavLauncher FFmpeg plugin.
-
-
-    // ImGui
-    shadow(implementation(rootProject.files('deps/imgui-binding-1.92.jar')))
-    shadow(api(rootProject.files('deps/imgui-java-natives-android.jar')))
+    // Native libs for Android packaging
+    shadow(implementation(name: 'ffmpeg-legacy-android-arm64-v8a', ext: 'jar'))
+    shadow(fileTree(dir: 'libs', include: ['*.jar']))
 }
 
 processResources {
@@ -97,46 +89,40 @@ processResources {
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    it.options.release = 25
-}
-
 java {
-    withSourcesJar()
-
-    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
-    sourceCompatibility = JavaVersion.VERSION_25
-    targetCompatibility = JavaVersion.VERSION_25
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
-jar {
-    from("LICENSE") {
-        rename { name ->
-            name + "_" + project.base.archivesName.get()
-        }
-    }
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+}
+
+tasks.named('jar', Jar) {
+    classifier = 'thin'
 }
 
 shadowJar {
     configurations = [project.configurations.shadow]
-    archiveBaseName = "flashback"
-    destinationDirectory = file("${buildDir}/tmp/allJar")
-
-    exclude("LICENSE")
-    exclude("LICENSE.txt")
+    archiveClassifier = 'flashback'
+    destinationDirectory = file("${buildDir}/libs")
+    
+    exclude 'META-INF/**'
+    exclude 'LICENSE.txt'
 }
 
-// Super hacky... merge the shadowJar with the main jar.
-tasks.register("mergeShadowWithIncludes", Jar) {
-    archiveBaseName.set("merged")
-    from(zipTree(project.tasks.jar.archiveFile))
-    from(zipTree(project.tasks.shadowJar.archiveFile))
-    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+tasks.register('mergeShadowWithUnclassified', Jar) {
+    archiveBaseName = 'output'
+    archiveVersion = project.version
+    from(zipTree(shadowJar.archiveFile))
+    from(zipTree(jar.archiveFile))
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-    var archiveFileFrom = it.archiveFile
-    var archiveFileTo = project.tasks.jar.archiveFile
-    doLast {
-        archiveFileFrom.get().asFile.renameTo(archiveFileTo.get().asFile)
-    }
+    var archiveFileFrom = archiveFile
+    archiveFile.set(provider { archiveFileFrom.get() })
 }
-project.assemble.dependsOn(mergeShadowWithIncludes)
+
+project.assemble.dependsOn(mergeShadowWithUnclassified)
