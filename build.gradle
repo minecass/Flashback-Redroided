@@ -11,7 +11,7 @@ buildscript {
     }
 }
 
-apply plugin: 'net.fabricmc.fabric-loom'
+apply plugin: 'fabric-loom'
 apply plugin: 'com.gradleup.shadow'
 apply plugin: 'maven-publish'
 
