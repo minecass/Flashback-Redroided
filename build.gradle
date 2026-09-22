@@ -1,19 +1,8 @@
-buildscript {
-    repositories {
-        maven { url = 'https://maven.fabricmc.net/' }
-        mavenCentral()
-        gradlePluginPortal()
-        maven { url = 'https://jitpack.io' }
-    }
-    dependencies {
-        classpath 'net.fabricmc:fabric-loom:1.7-SNAPSHOT'
-        classpath 'com.gradleup.shadow:shadow-gradle-plugin:8.3.5'
-    }
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.8-SNAPSHOT'
+    id 'com.gradleup.shadow' version '8.3.5'
+    id 'maven-publish'
 }
-
-apply plugin: 'fabric-loom'
-apply plugin: 'com.gradleup.shadow'
-apply plugin: 'maven-publish'
 
 version = project.mod_version
 group = project.maven_group
