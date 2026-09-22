@@ -10,6 +10,14 @@ buildscript {
     }
 }
 
+pluginManagement {
+    repositories {
+        maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
 plugins {
     id 'net.fabricmc.fabric-loom' version '1.7-SNAPSHOT'
     id 'com.gradleup.shadow' version '8.3.5'
@@ -24,6 +32,7 @@ base {
 }
 
 repositories {
+    maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
     maven {
         url = 'https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/devauth/maven/v1'
         content {
