@@ -1,49 +1,49 @@
 {
-	"schemaVersion": 1,
-	"id": "flashback-redroided",
-	"version": "${version}",
-	"name": "Flashback [Redroided]",
-	"description": "Android port of Flashback with custom native ImGui and Ffmpeg packaging for launcher compatibility",
-	"authors": [
-		"Moulberry",
-		"WhalterMc"
-	],
-	"contact": {
-		"homepage": "https://flashback.moulberry.com/",
-		"sources": "https://github.com/Moulberry/Flashback"
-	},
-	"license": "https://github.com/Moulberry/Flashback/blob/master/LICENSE.md",
-	"icon": "assets/flashback/icon.png",
-	"environment": "client",
-	"entrypoints": {
-		"main": [
-			"com.moulberry.flashback.Flashback"
-		],
-		"client": [
-			"com.moulberry.flashback.Flashback"
-		],
-		"frex_flawless_frames": [
-			"com.moulberry.flashback.exporting.FrexFlawlessFramesIntegration"
-		],
-		"modmenu": [
-			"com.moulberry.flashback.FlashbackModMenuApiImpl"
-		],
-        "voicechat": [
-            "com.moulberry.flashback.compat.simple_voice_chat.SimpleVoiceChatPlugin"
-        ]
-	},
-	"accessWidener": "flashback.accesswidener",
-	"mixins": [
-		"flashback.mixins.json"
-	],
-    "breaks": {
-        "iris": "<1.10.9",
-        "voicechat": "<2.6.23"
-    },
-	"depends": {
-		"fabricloader": ">=0.15.10",
-		"minecraft": ">26.2 <26.4",
-		"java": ">=21",
-		"fabric-api": ">=0.107.0"
-	}
+  "schemaVersion": 1,
+  "id": "flashback_redroided",
+  "version": "${version}",
+  "name": "Flashback (Redroided)",
+  "description": "Android port of Flashback with custom native libui and ffmpeg packaging for launcher compatibility",
+  "authors": [
+    "Moulberry",
+    "WhalterMc"
+  ],
+  "contact": {
+    "homepage": "https://flashback.moulberry.com/",
+    "sources": "https://github.com/Moulberry/Flashback"
+  },
+  "license": "https://github.com/Moulberry/Flashback/blob/master/LICENSE.md",
+  "icon": "assets/flashback/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "main": [
+      "com.moulberry.flashback.Flashback"
+    ],
+    "client": [
+      "com.moulberry.flashback.Flashback"
+    ],
+    "Free_Flawless_Frames": [
+      "com.moulberry.flashback.exporting.FreeFlawlessFramesIntegration"
+    ],
+    "modmenu": [
+      "com.moulberry.flashback.FlashbackModMenuApiImpl"
+    ],
+    "voicechat": [
+      "com.moulberry.flashback.compat.simple_voice_chat.SimpleVoiceChatPlugin"
+    ]
+  },
+  "accessWidener": "flashback.accesswidener",
+  "mixins": [
+    "flashback.mixins.json"
+  ],
+  "breaks": {
+    "iris": "<1.10.9",
+    "voicechat": "<2.6.23"
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": ">=1.21 <1.22",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
 }
